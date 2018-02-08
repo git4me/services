@@ -67,7 +67,7 @@ services:
                     - "node.labels.private == false"                
                     - "node.labels.server == true"
             labels:
-                - "traefik.docker.network=homeops_frontend"
+                - "traefik.docker.network=services_default"
                 - "traefik.port=3000"
                 - "traefik.frontend.rule=Host:grafana.apps.home"
             restart_policy:
@@ -98,7 +98,7 @@ services:
                     - "node.labels.server == true"
                     - "node.labels.private == false"                    
             labels:
-                - "traefik.docker.network=homeops_frontend"
+                - "traefik.docker.network=services_default"
                 - "traefik.port=8123"
                 - "traefik.frontend.rule=Host:hass.apps.home"
             replicas: 1
@@ -130,7 +130,7 @@ services:
                     - "node.labels.private == false"
                     - "node.labels.server == true"
             labels:
-                - "traefik.docker.network=homeops_frontend"
+                - "traefik.docker.network=services_default"
                 - "traefik.port=8086"
                 - "traefik.frontend.rule=Host:influxdb.apps.home"
             restart_policy:
@@ -153,7 +153,7 @@ services:
         image: jshridha/motioneye
         deploy:
             labels:
-                - "traefik.docker.network=homeops_frontend"
+                - "traefik.docker.network=services_default"
                 - "traefik.port=8765"
                 - "traefik.frontend.rule=Host:motion.apps.home"
             placement:
@@ -254,7 +254,7 @@ services:
         image: plexinc/pms-docker
         deploy:
             labels:
-                - "traefik.docker.network=homeops_frontend"
+                - "traefik.docker.network=services_default"
                 - "traefik.port=32400"
                 - "traefik.frontend.rule=Host:plex.apps.home"
             placement:
@@ -330,7 +330,7 @@ services:
         image: jinglemansweep/rundeck:latest
         deploy:
             labels:
-                - "traefik.docker.network=homeops_frontend"
+                - "traefik.docker.network=services_default"
                 - "traefik.port=4440"
                 - "traefik.frontend.rule=Host:rundeck.apps.home"
             placement:
@@ -389,7 +389,7 @@ services:
         image: sameersbn/squid
         deploy:
             labels:
-                - "traefik.docker.network=homeops_frontend"
+                - "traefik.docker.network=services_default"
                 - "traefik.port=3128"
                 - "traefik.frontend.rule=Host:squid.apps.home"
             placement:
@@ -410,7 +410,7 @@ services:
         image: linuxserver/transmission
         deploy:
             labels:
-                - "traefik.docker.network=homeops_frontend"
+                - "traefik.docker.network=services_default"
                 - "traefik.port=9091"
                 - "traefik.frontend.rule=Host:transmission.apps.home"
             placement:

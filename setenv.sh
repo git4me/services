@@ -1,8 +1,6 @@
 #!/bin/bash
 
-base_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )/" && pwd )"
+stack_name="${PWD##*/}"
 
-STACK_NAME="homeops"
-
-alias stackup="docker stack deploy -c ${base_dir}/docker-compose.yml ${STACK_NAME}"
-alias stackdown="docker stack rm ${STACK_NAME}"
+alias stackup="docker stack deploy -c ./docker-compose.yml ${stack_name}"
+alias stackdown="docker stack rm ${stack_name}"
