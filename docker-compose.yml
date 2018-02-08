@@ -1,0 +1,620 @@
+version: "3.3"
+
+services:
+
+    # Traefik Reverse Proxy
+
+    traefik:
+        image: traefik
+        command: --docker \
+                 --docker.swarmmode \
+                 --docker.domain=apps.home \
+                 --docker.watch \
+                 --web.certfile=/run/secrets/traefik_server_crt \
+                 --web.keyfile=/run/secrets/traefik_server_key \
+                 --logLevel=DEBUG
+        deploy:
+            placement:
+                constraints:
+                    - "node.role == manager"
+                    - "node.labels.private == false"                    
+                    - "node.labels.server == true"
+            restart_policy:
+                condition: on-failure
+                delay: 5s
+                max_attempts: 3
+        ports:
+            - "80:80"
+            - "443:443"
+            - "8081:8080"
+        secrets:
+            - source: "traefik_server_crt"
+            - source: "traefik_server_key"
+        volumes:
+            - /var/run/docker.sock:/var/run/docker.sock
+
+    traefik-external:
+        image: traefik
+        deploy:
+            placement:
+                constraints:
+                    - "node.role == manager"
+                    - "node.labels.private == false"                    
+                    - "node.labels.server == true"
+            restart_policy:
+                condition: on-failure
+                delay: 5s
+                max_attempts: 3
+        ports:
+            - "9080:80"
+            - "9443:443"
+        secrets:
+            - source: traefik_external_config
+              target: /traefik.toml
+        volumes:
+            - type: volume
+              source: nfs_volumes_traefik_acme
+              target: /etc/traefik/acme
+              volume:
+                  nocopy: true              
+
+    # Grafana Dashboard
+
+    grafana:
+        image: grafana/grafana
+        depends_on:
+            - influxdb
+        deploy:
+            placement:
+                constraints:
+                    - "node.labels.private == false"                
+                    - "node.labels.server == true"
+            labels:
+                - "traefik.docker.network=homeops_frontend"
+                - "traefik.port=3000"
+                - "traefik.frontend.rule=Host:grafana.apps.home"
+            restart_policy:
+                condition: on-failure
+                delay: 5s
+                max_attempts: 3
+        ports:
+            - "3000:3000"
+        volumes:
+            - type: volume
+              source: nfs_volumes_grafana_data
+              target: /var/lib/grafana
+              volume:
+                  nocopy: true            
+        environment:
+            GF_SERVER_ROOT_URL: https://grafana.apps.home
+
+    # Home Assistant
+
+    hass:
+        image: homeassistant/home-assistant
+        depends_on:
+            - influxdb
+        deploy:
+            placement:
+                constraints:
+                    - "node.labels.nfs == true"
+                    - "node.labels.server == true"
+                    - "node.labels.private == false"                    
+            labels:
+                - "traefik.docker.network=homeops_frontend"
+                - "traefik.port=8123"
+                - "traefik.frontend.rule=Host:hass.apps.home"
+            replicas: 1
+            restart_policy:
+                condition: on-failure
+                delay: 5s
+                max_attempts: 3
+        ports:
+            - "8123:8123"
+        volumes:
+            - type: volume
+              source: nfs_volumes_hass_config
+              target: /config
+              volume:
+                  nocopy: true
+            - /etc/localtime:/etc/localtime:ro
+    #    devices:
+    #        # - "/dev/ttyACM0:/dev/ttyACM0"
+    #        - "/dev/ttyUSB0:/dev/ttyUSB0"
+
+    # InfluxDB
+
+    influxdb:
+        image: influxdb:alpine
+        deploy:
+            placement:
+                constraints:
+                    - "node.labels.nfs == true"
+                    - "node.labels.private == false"
+                    - "node.labels.server == true"
+            labels:
+                - "traefik.docker.network=homeops_frontend"
+                - "traefik.port=8086"
+                - "traefik.frontend.rule=Host:influxdb.apps.home"
+            restart_policy:
+                condition: on-failure
+                delay: 5s
+                max_attempts: 3
+        ports:
+            - "8083:8083"
+            - "8086:8086"
+        volumes:
+            - type: volume
+              source: nfs_volumes_influxdb_data
+              target: /var/lib/influxdb
+              volume:
+                  nocopy: true
+
+    # CCTV Server
+
+    motion:
+        image: jshridha/motioneye
+        deploy:
+            labels:
+                - "traefik.docker.network=homeops_frontend"
+                - "traefik.port=8765"
+                - "traefik.frontend.rule=Host:motion.apps.home"
+            placement:
+                constraints:
+                    - "node.labels.nfs == true"
+                    - "node.labels.private == false"                    
+                    - "node.labels.server == true"                    
+            restart_policy:
+                condition: on-failure
+                delay: 5s
+                max_attempts: 3
+        ports:
+            - "8765:8765"
+            - "44401:8081"
+            - "44402:8082"
+            - "44403:8083"
+            - "44404:8084"
+            - "44405:8085"
+        volumes:
+            - type: volume
+              source: nfs_data_cctv
+              target: /home/nobody/media
+              volume:
+                  nocopy: true
+            - type: volume
+              source: nfs_volumes_motion_config
+              target: /config
+              volume:
+                  nocopy: true
+        environment:
+            TIMEZONE: Europe/London
+
+    # MongoDB
+
+    mongodb:
+        image: mongo
+        deploy:
+            placement:
+                constraints:
+                    - "node.labels.nfs == true"
+                    - "node.labels.private == false"                    
+                    - "node.labels.server == true"                    
+            restart_policy:
+                condition: on-failure
+                delay: 5s
+                max_attempts: 3
+        ports:
+            - "27017:27017"                
+        volumes:
+            - type: volume
+              source: nfs_volumes_mongodb_data
+              target: /data/db     
+
+    # Mosquitto
+
+    mosquitto:
+        image: eclipse-mosquitto
+        deploy:
+            placement:
+                constraints:
+                    - "node.labels.nfs == true"
+                    - "node.labels.private == false"                    
+                    - "node.labels.server == true"                    
+            restart_policy:
+                condition: on-failure
+                delay: 5s
+                max_attempts: 3
+        ports:
+            - "9001:9001"                
+
+    # MySQL Server
+
+    mysql:
+        image: mysql
+        deploy:
+            placement:
+                constraints:
+                    - "node.labels.nfs == true"
+                    - "node.labels.private == false"                    
+                    - "node.labels.server == true"                    
+            restart_policy:
+                condition: on-failure
+                delay: 5s
+                max_attempts: 3
+        ports:
+            - "3306:3306"                
+        volumes:
+            - type: volume
+              source: nfs_volumes_mysql_data
+              target: /var/lib/mysql          
+        environment:
+            MYSQL_ROOT_PASSWORD: password
+            MYSQL_DATABASE: testdb
+    
+    # Plex Media Server
+
+    plex:
+        image: plexinc/pms-docker
+        deploy:
+            labels:
+                - "traefik.docker.network=homeops_frontend"
+                - "traefik.port=32400"
+                - "traefik.frontend.rule=Host:plex.apps.home"
+            placement:
+                constraints:
+                    - "node.hostname == d1"
+                    - "node.labels.nfs == true"
+                    - "node.labels.private == false"  
+                    - "node.labels.server == true"
+            restart_policy:
+                condition: on-failure
+                delay: 5s
+                max_attempts: 3
+        ports:
+            - "32400:32400/tcp"
+            - "3005:3005/tcp"
+            - "8324:8324/tcp"
+            - "32469:32469/tcp"
+            - "1900:1900/udp"
+            - "32410:32410/udp"
+            - "32412:32412/udp"
+            - "32413:32413/udp"
+            - "32414:32414/udp"
+        environment:
+            TZ: "Europe/London"
+            ALLOWED_NETWORKS: "10.0.2.0/24"
+            ADVERTISE_IP: "http://10.0.2.61:32400/"
+        volumes:
+            - type: volume
+              source: nfs_volumes_plex_config
+              target: /config
+              volume:
+                  nocopy: true
+            - type: volume
+              source: nfs_volumes_plex_transcode
+              target: /transcode
+              volume:
+                  nocopy: true
+            - type: volume
+              source: nfs_movies
+              target: /data/movies
+              volume:
+                  nocopy: true
+            - type: volume
+              source: nfs_tvseries
+              target: /data/tvseries
+              volume:
+                  nocopy: true
+
+    # Redis
+
+    redis:
+        image: redis
+        deploy:
+            placement:
+                constraints:
+                    - "node.labels.nfs == true"
+                    - "node.labels.private == false"                    
+                    - "node.labels.server == true"                    
+            restart_policy:
+                condition: on-failure
+                delay: 5s
+                max_attempts: 3
+        ports:
+            - "6379:6379"                
+        volumes:
+            - type: volume
+              source: nfs_volumes_redis_data
+              target: /data       
+
+    # Rundeck
+
+    rundeck:
+        image: jinglemansweep/rundeck:latest
+        deploy:
+            labels:
+                - "traefik.docker.network=homeops_frontend"
+                - "traefik.port=4440"
+                - "traefik.frontend.rule=Host:rundeck.apps.home"
+            placement:
+                constraints:
+                    - "node.labels.nfs == true"                    
+                    - "node.labels.private == false"                     
+                    - "node.labels.server == true"                    
+            restart_policy:
+                condition: on-failure
+                delay: 5s
+                max_attempts: 3
+        environment:
+            SERVER_URL: "http://rundeck.apps.home"
+        volumes:
+            - type: volume
+              source: nfs_volumes_rundeck_etc
+              target: /etc/rundeck
+              volume:
+                  nocopy: true
+            - type: volume
+              source: nfs_volumes_rundeck_log
+              target: /var/log/rundeck
+              volume:
+                  nocopy: true
+            - type: volume
+              source: nfs_volumes_rundeck_mysql
+              target: /var/lib/mysql
+              volume:
+                  nocopy: true
+            - type: volume
+              source: nfs_volumes_rundeck_plugins
+              target: /opt/rundeck-plugins
+              volume:
+                  nocopy: true
+            - type: volume
+              source: nfs_volumes_rundeck_projects
+              target: /var/rundeck/projects
+              volume:
+                  nocopy: true
+            - type: volume
+              source: nfs_volumes_rundeck_ssh
+              target: /var/lib/rundeck/.ssh
+              volume:
+                  nocopy: true
+            - type: volume
+              source: nfs_volumes_rundeck_storage
+              target: /var/lib/rundeck/storage
+              volume:
+                  nocopy: true
+        ports:
+             - "4440:4440"
+
+    # Squid Proxy
+
+    squid:
+        image: sameersbn/squid
+        deploy:
+            labels:
+                - "traefik.docker.network=homeops_frontend"
+                - "traefik.port=3128"
+                - "traefik.frontend.rule=Host:squid.apps.home"
+            placement:
+                constraints:
+                    - "node.labels.server == true"
+                    - "node.labels.nfs == true"
+                    - "node.labels.private == true"
+            restart_policy:
+                condition: on-failure
+                delay: 5s
+                max_attempts: 3
+        ports:
+            - "3128:3128/tcp"
+
+    # Transmission
+
+    transmission:
+        image: linuxserver/transmission
+        deploy:
+            labels:
+                - "traefik.docker.network=homeops_frontend"
+                - "traefik.port=9091"
+                - "traefik.frontend.rule=Host:transmission.apps.home"
+            placement:
+                constraints:
+                    - "node.labels.server == true"
+                    - "node.labels.nfs == true"
+                    - "node.labels.private == true"
+            restart_policy:
+                condition: on-failure
+                delay: 5s
+                max_attempts: 3
+        ports:
+            - "9091:9091/tcp"
+            - "51413:51413/udp"
+        environment:
+            TZ: "Europe/London"
+        volumes:
+            - type: volume
+              source: nfs_volumes_transmission_config
+              target: /config
+              volume:
+                  nocopy: true
+            - type: volume
+              source: nfs_volumes_transmission_downloads
+              target: /downloads
+              volume:
+                  nocopy: true
+
+secrets:
+
+    # Secrets
+
+    traefik_external_config:
+        file: ../secrets/traefik/traefik_external.toml
+    traefik_server_crt:
+        file: ../secrets/traefik/server.crt
+    traefik_server_key:
+        file: ../secrets/traefik/server.key
+
+
+volumes:
+
+    # NFS volumes
+
+    nfs_volumes_traefik_acme:
+        driver: local
+        driver_opts:
+            type: nfs
+            o: addr=10.0.2.10,vers=4,soft,rw
+            device: ":/export/volumes/traefik/acme"
+
+    nfs_data_cctv:
+        driver: local
+        driver_opts:
+            type: nfs
+            o: addr=10.0.2.10,vers=4,soft,rw
+            device: ":/export/data/cctv"
+
+    nfs_movies:
+        driver: local
+        driver_opts:
+            type: nfs
+            o: addr=10.0.2.10,vers=4,soft,ro
+            device: ":/export/movies"
+
+    nfs_tvseries:
+        driver: local
+        driver_opts:
+            type: nfs
+            o: addr=10.0.2.10,vers=4,soft,ro
+            device: ":/export/tvseries"
+
+    nfs_volumes_grafana_data:
+        driver: local
+        driver_opts:
+            type: nfs
+            o: addr=10.0.2.10,vers=4,soft,rw
+            device: ":/export/volumes/grafana/data"
+
+    nfs_volumes_influxdb_data:
+        driver: local
+        driver_opts:
+            type: nfs
+            o: addr=10.0.2.10,vers=4,soft,rw
+            device: ":/export/volumes/influxdb/data"
+
+    nfs_volumes_hass_config:
+        driver: local
+        driver_opts:
+            type: nfs
+            o: addr=10.0.2.10,vers=4,soft,rw
+            device: ":/export/volumes/hass/config"
+
+    nfs_volumes_jenkins_home:
+        driver: local
+        driver_opts:
+            type: nfs
+            o: addr=10.0.2.10,vers=4,soft,rw
+            device: ":/export/volumes/jenkins/home"
+
+    nfs_volumes_mongodb_data:
+        driver: local
+        driver_opts:
+            type: nfs
+            o: addr=10.0.2.10,vers=4,soft,rw
+            device: ":/export/volumes/mongodb/data"
+
+    nfs_volumes_motion_config:
+        driver: local
+        driver_opts:
+            type: nfs
+            o: addr=10.0.2.10,vers=4,soft,rw
+            device: ":/export/volumes/motion/config"
+    
+    nfs_volumes_mysql_data:
+        driver: local
+        driver_opts:
+            type: nfs
+            o: addr=10.0.2.10,vers=4,soft,rw
+            device: ":/export/volumes/mysql/data"
+
+    nfs_volumes_plex_config:
+        driver: local
+        driver_opts:
+            type: nfs
+            o: addr=10.0.2.10,vers=4,soft,rw
+            device: ":/export/volumes/plex/config"
+
+    nfs_volumes_plex_transcode:
+        driver: local
+        driver_opts:
+            type: nfs
+            o: addr=10.0.2.10,vers=4,soft,rw
+            device: ":/export/volumes/plex/transcode"
+ 
+    nfs_volumes_redis_data:
+        driver: local
+        driver_opts:
+            type: nfs
+            o: addr=10.0.2.10,vers=4,soft,rw
+            device: ":/export/volumes/redis/data"
+
+    nfs_volumes_rundeck_etc:
+        driver: local
+        driver_opts:
+            type: nfs
+            o: addr=10.0.2.10,vers=4,soft,rw
+            device: ":/export/volumes/rundeck/etc"
+ 
+    nfs_volumes_rundeck_log:
+        driver: local
+        driver_opts:
+            type: nfs
+            o: addr=10.0.2.10,vers=4,soft,rw
+            device: ":/export/volumes/rundeck/log"
+
+    nfs_volumes_rundeck_mysql:
+        driver: local
+        driver_opts:
+            type: nfs
+            o: addr=10.0.2.10,vers=4,soft,rw
+            device: ":/export/volumes/rundeck/mysql"
+ 
+    nfs_volumes_rundeck_plugins:
+        driver: local
+        driver_opts:
+            type: nfs
+            o: addr=10.0.2.10,vers=4,soft,rw
+            device: ":/export/volumes/rundeck/plugins"
+
+    nfs_volumes_rundeck_projects:
+        driver: local
+        driver_opts:
+            type: nfs
+            o: addr=10.0.2.10,vers=4,soft,rw
+            device: ":/export/volumes/rundeck/projects"
+ 
+    nfs_volumes_rundeck_ssh:
+        driver: local
+        driver_opts:
+            type: nfs
+            o: addr=10.0.2.10,vers=4,soft,rw
+            device: ":/export/volumes/rundeck/ssh"
+ 
+    nfs_volumes_rundeck_storage:
+        driver: local
+        driver_opts:
+            type: nfs
+            o: addr=10.0.2.10,vers=4,soft,rw
+            device: ":/export/volumes/rundeck/storage"
+
+    nfs_volumes_transmission_config:
+        driver: local
+        driver_opts:
+            type: nfs
+            o: addr=10.0.2.10,vers=4,soft,rw
+            device: ":/export/volumes/transmission/config"
+
+    nfs_volumes_transmission_downloads:
+        driver: local
+        driver_opts:
+            type: nfs
+            o: addr=10.0.2.10,vers=4,soft,rw
+            device: ":/export/volumes/transmission/downloads"
