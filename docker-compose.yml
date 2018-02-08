@@ -48,9 +48,6 @@ services:
         ports:
             - "9080:80"
             - "9443:443"
-        secrets:
-            - source: traefik_external_config
-              target: /traefik.toml
         volumes:
             - type: volume
               source: nfs_volumes_traefik_acme
@@ -446,13 +443,10 @@ secrets:
 
     # Secrets
 
-    traefik_external_config:
-        file: ../secrets/traefik/traefik_external.toml
     traefik_server_crt:
-        file: ../secrets/traefik/server.crt
+        file: ./secrets/traefik/server.crt
     traefik_server_key:
-        file: ../secrets/traefik/server.key
-
+        file: ./secrets/traefik/server.key
 
 volumes:
 
