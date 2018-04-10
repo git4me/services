@@ -1,5 +1,7 @@
 #!/bin/bash
 
+source ./secrets/env.sh
+
 stack_name="${PWD##*/}"
 
 alias stackup="docker stack deploy -c ./docker-compose.yml ${stack_name}"

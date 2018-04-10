@@ -2,62 +2,6 @@ version: "3.3"
 
 services:
 
-    # Traefik Reverse Proxy
-
-    traefik:
-        image: traefik
-        command: --docker \
-                 --docker.swarmmode \
-                 --docker.domain=apps.home \
-                 --docker.watch \
-                 --defaultEntryPoints=http \
-                 --web.certfile=/run/secrets/traefik_server_crt \
-                 --web.keyfile=/run/secrets/traefik_server_key \
-                 --logLevel=DEBUG
-        deploy:
-            placement:
-                constraints:
-                    - "node.role == manager"
-                    - "node.labels.private == false"                    
-                    - "node.labels.server == true"
-            restart_policy:
-                condition: on-failure
-                delay: 5s
-                max_attempts: 3
-        #healthcheck:
-        #    test: curl -f http://apps.home:8081 || exit 1
-        ports:
-            - "80:80"
-            - "443:443"
-            - "8081:8080"
-        secrets:
-            - source: "traefik_server_crt"
-            - source: "traefik_server_key"
-        volumes:
-            - /var/run/docker.sock:/var/run/docker.sock
-
-    traefik-external:
-        image: traefik
-        deploy:
-            placement:
-                constraints:
-                    - "node.role == manager"
-                    - "node.labels.private == false"                    
-                    - "node.labels.server == true"
-            restart_policy:
-                condition: on-failure
-                delay: 5s
-                max_attempts: 3
-        ports:
-            - "9080:80"
-            - "9443:443"
-        volumes:
-            - type: volume
-              source: nfs_volumes_traefik_acme
-              target: /etc/traefik/acme
-              volume:
-                  nocopy: true              
-
     # Gitea
 
     gitea:
@@ -77,6 +21,7 @@ services:
                 delay: 5s
                 max_attempts: 3
         ports:
+            - "3001:3000"
             - "3022:22"
         volumes:
             - type: volume
@@ -114,40 +59,6 @@ services:
                   nocopy: true            
         environment:
             GF_SERVER_ROOT_URL: https://grafana.apps.home
-
-    # Home Assistant
-
-    hass:
-        image: homeassistant/home-assistant
-        depends_on:
-            - influxdb
-        deploy:
-            placement:
-                constraints:
-                    - "node.labels.nfs == true"
-                    - "node.labels.server == true"
-                    - "node.labels.private == false"                    
-            labels:
-                - "traefik.docker.network=services_default"
-                - "traefik.port=8123"
-                - "traefik.frontend.rule=Host:hass.apps.home"
-            replicas: 1
-            restart_policy:
-                condition: on-failure
-                delay: 5s
-                max_attempts: 3
-        ports:
-            - "8123:8123"
-        volumes:
-            - type: volume
-              source: nfs_volumes_hass_config
-              target: /config
-              volume:
-                  nocopy: true
-            - /etc/localtime:/etc/localtime:ro
-    #    devices:
-    #        # - "/dev/ttyACM0:/dev/ttyACM0"
-    #        - "/dev/ttyUSB0:/dev/ttyUSB0"
 
     # InfluxDB
 
@@ -359,10 +270,6 @@ services:
     rundeck:
         image: jinglemansweep/rundeck:latest
         deploy:
-            labels:
-                - "traefik.docker.network=services_default"
-                - "traefik.port=4440"
-                - "traefik.frontend.rule=Host:rundeck.apps.home"
             placement:
                 constraints:
                     - "node.labels.nfs == true"                    
@@ -373,7 +280,7 @@ services:
                 delay: 5s
                 max_attempts: 3
         environment:
-            EXTERNAL_SERVER_URL: "http://rundeck.apps.home"
+            EXTERNAL_SERVER_URL: "https://rundeck.peachtrees.eu"
             ANSIBLE_HOST_KEY_CHECKING: "False"
         volumes:
             - type: volume
@@ -419,62 +326,6 @@ services:
         ports:
              - "4440:4440"
 
-    # Squid Proxy
-
-    squid:
-        image: sameersbn/squid
-        deploy:
-            labels:
-                - "traefik.docker.network=services_default"
-                - "traefik.port=3128"
-                - "traefik.frontend.rule=Host:squid.apps.home"
-            placement:
-                constraints:
-                    - "node.labels.server == true"
-                    - "node.labels.nfs == true"
-                    - "node.labels.private == true"
-            restart_policy:
-                condition: on-failure
-                delay: 5s
-                max_attempts: 3
-        ports:
-            - "3128:3128/tcp"
-
-    # Transmission
-
-    transmission:
-        image: linuxserver/transmission
-        deploy:
-            labels:
-                - "traefik.docker.network=services_default"
-                - "traefik.port=9091"
-                - "traefik.frontend.rule=Host:transmission.apps.home"
-            placement:
-                constraints:
-                    - "node.labels.server == true"
-                    - "node.labels.nfs == true"
-                    - "node.labels.private == true"
-            restart_policy:
-                condition: on-failure
-                delay: 5s
-                max_attempts: 3
-        ports:
-            - "9091:9091/tcp"
-            - "51413:51413/udp"
-        environment:
-            TZ: "Europe/London"
-        volumes:
-            - type: volume
-              source: nfs_volumes_transmission_config
-              target: /config
-              volume:
-                  nocopy: true
-            - type: volume
-              source: nfs_volumes_transmission_downloads
-              target: /downloads
-              volume:
-                  nocopy: true
-
     # Unifi
 
     unifi:
@@ -510,25 +361,9 @@ services:
               volume:
                   nocopy: true
 
-secrets:
-
-    # Secrets
-
-    traefik_server_crt:
-        file: ./secrets/traefik/server.crt
-    traefik_server_key:
-        file: ./secrets/traefik/server.key
-
 volumes:
 
     # NFS volumes
-
-    nfs_volumes_traefik_acme:
-        driver: local
-        driver_opts:
-            type: nfs
-            o: addr=10.0.2.10,vers=4,soft,rw
-            device: ":/export/volumes/traefik/acme"
 
     nfs_data_cctv:
         driver: local
@@ -571,20 +406,6 @@ volumes:
             type: nfs
             o: addr=10.0.2.10,vers=4,soft,rw
             device: ":/export/volumes/influxdb/data"
-
-    nfs_volumes_hass_config:
-        driver: local
-        driver_opts:
-            type: nfs
-            o: addr=10.0.2.10,vers=4,soft,rw
-            device: ":/export/volumes/hass/config"
-
-    nfs_volumes_jenkins_home:
-        driver: local
-        driver_opts:
-            type: nfs
-            o: addr=10.0.2.10,vers=4,soft,rw
-            device: ":/export/volumes/jenkins/home"
 
     nfs_volumes_mongodb_data:
         driver: local
