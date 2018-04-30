@@ -1,0 +1,121 @@
+version: "3.5"
+
+services:
+  rundeck:
+    image: jinglemansweep/rundeck:latest
+    deploy:
+      labels:
+        - "traefik.docker.network=services_default"
+        - "traefik.port=4440"
+        - "traefik.frontend.rule=Host:rundeck.apps.home"
+      placement:
+        constraints:
+          - "node.labels.nfs == true"                    
+          - "node.labels.server == true"                    
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+    environment:
+      EXTERNAL_SERVER_URL: "https://rundeck.ptre.es"
+      ANSIBLE_HOST_KEY_CHECKING: "False"
+    volumes:
+      - type: volume
+        source: rundeck_etc
+        target: /etc/rundeck
+        volume:
+          nocopy: true
+      - type: volume
+        source: rundeck_log
+        target: /var/log/rundeck
+        volume:
+          nocopy: true
+      - type: volume
+        source: rundeck_mysql
+        target: /var/lib/mysql
+        volume:
+          nocopy: true
+      - type: volume
+        source: rundeck_plugins
+        target: /opt/rundeck-plugins
+        volume:
+          nocopy: true
+      - type: volume
+        source: rundeck_projects
+        target: /var/rundeck/projects
+        volume:
+          nocopy: true
+      - type: volume
+        source: rundeck_ssh
+        target: /var/lib/rundeck/.ssh
+        volume:
+          nocopy: true
+      - type: volume
+        source: rundeck_storage
+        target: /var/lib/rundeck/var/storage
+        volume:
+          nocopy: true
+      - type: volume
+        source: rundeck_ansible
+        target: /etc/ansible
+        volume:
+          nocopy: true
+    ports:
+          - "4440:4440"
+
+volumes:
+  rundeck_ansible:
+    driver: local
+    driver_opts:
+      type: nfs
+      o: addr=10.0.2.10,vers=4,soft,rw
+      device: ":/export/volumes/rundeck/ansible"
+
+  rundeck_etc:
+    driver: local
+    driver_opts:
+      type: nfs
+      o: addr=10.0.2.10,vers=4,soft,rw
+      device: ":/export/volumes/rundeck/etc"
+ 
+  rundeck_log:
+    driver: local
+    driver_opts:
+      type: nfs
+      o: addr=10.0.2.10,vers=4,soft,rw
+      device: ":/export/volumes/rundeck/log"
+
+  rundeck_mysql:
+    driver: local
+    driver_opts:
+      type: nfs
+      o: addr=10.0.2.10,vers=4,soft,rw
+      device: ":/export/volumes/rundeck/mysql"
+ 
+  rundeck_plugins:
+    driver: local
+    driver_opts:
+      type: nfs
+      o: addr=10.0.2.10,vers=4,soft,rw
+      device: ":/export/volumes/rundeck/plugins"
+
+  rundeck_projects:
+    driver: local
+    driver_opts:
+      type: nfs
+      o: addr=10.0.2.10,vers=4,soft,rw
+      device: ":/export/volumes/rundeck/projects"
+ 
+  rundeck_ssh:
+    driver: local
+    driver_opts:
+      type: nfs
+      o: addr=10.0.2.10,vers=4,soft,rw
+      device: ":/export/volumes/rundeck/ssh"
+ 
+  rundeck_storage:
+    driver: local
+    driver_opts:
+      type: nfs
+      o: addr=10.0.2.10,vers=4,soft,rw
+      device: ":/export/volumes/rundeck/storage"

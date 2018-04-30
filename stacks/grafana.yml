@@ -1,0 +1,37 @@
+version: "3.5"
+
+services:
+  grafana:
+    image: grafana/grafana
+    depends_on:
+      - influxdb
+    deploy:
+      placement:
+        constraints:
+          - "node.labels.server == true"
+        labels:
+          - "traefik.docker.network=services_default"
+          - "traefik.port=3000"
+          - "traefik.frontend.rule=Host:grafana.apps.home"
+        restart_policy:
+          condition: on-failure
+          delay: 5s
+          max_attempts: 3
+    ports:
+      - "3000:3000"
+    volumes:
+      - type: volume
+        source: grafana_data
+        target: /var/lib/grafana
+        volume:
+          nocopy: true            
+    environment:
+      GF_SERVER_ROOT_URL: http://grafana.apps.home
+
+volumes:
+  grafana_data:
+    driver: local
+    driver_opts:
+      type: nfs
+      o: addr=10.0.2.10,vers=4,soft,rw
+      device: ":/export/volumes/grafana/data"      

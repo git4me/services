@@ -1,0 +1,31 @@
+version: "3.5"
+
+services:
+  mysql:
+    image: mysql
+    deploy:
+      placement:
+        constraints:
+          - "node.labels.nfs == true"
+          - "node.labels.server == true"                    
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+    ports:
+      - "3306:3306"                
+    volumes:
+      - type: volume
+        source: mysql_data
+        target: /var/lib/mysql          
+        environment:
+            MYSQL_ROOT_PASSWORD: password
+            MYSQL_DATABASE: testdb
+
+volumes:
+  mysql_data:
+    driver: local
+    driver_opts:
+      type: nfs
+      o: addr=10.0.2.10,vers=4,soft,rw
+      device: ":/export/volumes/mysql/data"

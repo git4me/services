@@ -1,0 +1,16 @@
+version: "3.5"
+
+services:
+  mosquitto:
+    image: eclipse-mosquitto
+    deploy:
+      placement:
+        constraints:
+          - "node.labels.nfs == true"
+          - "node.labels.server == true"                    
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+    ports:
+      - "9001:9001"      

@@ -1,0 +1,28 @@
+version: "3.5"
+
+services:
+  mongodb:
+    image: mongo
+    deploy:
+      placement:
+        constraints:
+          - "node.labels.nfs == true"
+          - "node.labels.server == true"                    
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+    ports:
+      - "27017:27017"                
+    volumes:
+      - type: volume
+        source: mongodb_data
+        target: /data/db     
+
+volumes:
+  mongodb_data:
+    driver: local
+    driver_opts:
+      type: nfs
+      o: addr=10.0.2.10,vers=4,soft,rw
+      device: ":/export/volumes/mongodb/data"

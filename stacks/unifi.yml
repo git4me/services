@@ -1,0 +1,42 @@
+version: "3.5"
+
+services:
+  unifi:
+    image: linuxserver/unifi
+    deploy:
+      labels:
+        - "traefik.docker.network=services_default"
+        - "traefik.port=8080"
+        - "traefik.frontend.rule=Host:unifi.apps.home"
+      placement:
+        constraints:
+          - "node.labels.server == true"
+          - "node.labels.nfs == true"
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+    ports:
+      - "10080:8080/tcp"
+      - "10081:8081/tcp"
+      - "8443:8443/tcp"
+      - "8843:8843/tcp"
+      - "8880:8880/tcp"
+      - "3478:3478/udp"
+      - "10001:10001/udp"
+    environment:
+      TZ: "Europe/London"
+    volumes:
+      - type: volume
+        source: unifi_data
+        target: /config
+        volume:
+          nocopy: true
+
+volumes:
+  unifi_data:
+    driver: local
+    driver_opts:
+      type: nfs
+      o: addr=10.0.2.10,vers=4,soft,rw
+      device: ":/export/volumes/unifi/data"          

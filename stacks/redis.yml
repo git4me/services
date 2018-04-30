@@ -1,0 +1,28 @@
+version: "3.5"
+
+services:
+  redis:
+    image: redis
+    deploy:
+      placement:
+        constraints:
+          - "node.labels.nfs == true"
+          - "node.labels.server == true"                    
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+      max_attempts: 3
+    ports:
+      - "6379:6379"                
+    volumes:
+      - type: volume
+        source: redis_data
+        target: /data       
+
+volumes:
+  redis_data:
+    driver: local
+    driver_opts:
+      type: nfs
+      o: addr=10.0.2.10,vers=4,soft,rw
+      device: ":/export/volumes/redis/data"

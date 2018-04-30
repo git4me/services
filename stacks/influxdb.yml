@@ -1,0 +1,36 @@
+version: "3.5"
+
+services:
+  influxdb:
+    image: influxdb:alpine
+    deploy:
+      placement:
+        constraints:
+          - "node.labels.nfs == true"
+          - "node.labels.server == true"
+      labels:
+        - "traefik.docker.network=services_default"
+        - "traefik.port=8086"
+        - "traefik.frontend.rule=Host:influxdb.apps.home"
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+    ports:
+      - "8083:8083"
+      - "8086:8086"
+    volumes:
+      - type: volume
+        source: influxdb_data
+        target: /var/lib/influxdb
+        volume:
+          nocopy: true
+
+volumes:
+  influxdb_data:
+    driver: local
+    driver_opts:
+      type: nfs
+      o: addr=10.0.2.10,vers=4,soft,rw
+      device: ":/export/volumes/influxdb/data"
+      

@@ -1,0 +1,80 @@
+version: "3.5"
+
+services:
+  plex:
+    image: plexinc/pms-docker
+    deploy:
+      labels:
+        - "traefik.docker.network=services_default"
+        - "traefik.port=32400"
+        - "traefik.frontend.rule=Host:plex.apps.home"
+      placement:
+        constraints:
+          - "node.hostname == d1"
+          - "node.labels.nfs == true"
+          - "node.labels.server == true"
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+    ports:
+      - "32400:32400/tcp"
+      - "3005:3005/tcp"
+      - "8324:8324/tcp"
+      - "32469:32469/tcp"
+      - "1900:1900/udp"
+      - "32410:32410/udp"
+      - "32412:32412/udp"
+      - "32413:32413/udp"
+      - "32414:32414/udp"
+    environment:
+      TZ: "Europe/London"
+      ALLOWED_NETWORKS: "10.0.2.0/24"
+      ADVERTISE_IP: "http://10.0.2.61:32400/"
+    volumes:
+      - type: volume
+        source: plex_config
+        target: /config
+        volume:
+          nocopy: true
+      - type: volume
+        source: plex_transcode
+        target: /transcode
+        volume:
+          nocopy: true
+      - type: volume
+        source: movies
+        target: /data/movies
+        volume:
+          nocopy: true
+      - type: volume
+        source: tvseries
+        target: /data/tvseries
+        volume:
+          nocopy: true
+
+volumes:
+  plex_config:
+    driver: local
+    driver_opts:
+      type: nfs
+      o: addr=10.0.2.10,vers=4,soft,rw
+      device: ":/export/volumes/plex/config"
+  plex_transcode:
+    driver: local
+    driver_opts:
+      type: nfs
+      o: addr=10.0.2.10,vers=4,soft,rw
+      device: ":/export/volumes/plex/transcode"
+  movies:
+    driver: local
+    driver_opts:
+      type: nfs
+      o: addr=10.0.2.10,vers=4,soft,ro
+      device: ":/export/movies"
+  tvseries:
+    driver: local
+    driver_opts:
+      type: nfs
+      o: addr=10.0.2.10,vers=4,soft,ro
+      device: ":/export/tvseries"
