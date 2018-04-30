@@ -2,6 +2,30 @@ version: "3.3"
 
 services:
 
+    # Traefik Reverse Proxy
+
+    traefik:
+        image: traefik
+        command: --docker \
+                 --docker.swarmmode \
+                 --docker.domain=apps.home \
+                 --docker.watch \
+                 --logLevel=DEBUG
+        deploy:
+            placement:
+                constraints:
+                    - "node.role == manager"
+                    - "node.labels.server == true"
+            restart_policy:
+                condition: on-failure
+                delay: 5s
+                max_attempts: 3
+        ports:
+            - "80:80"
+            - "8081:8080"
+        volumes:
+            - /var/run/docker.sock:/var/run/docker.sock
+
     # Gitea
 
     gitea:
@@ -10,7 +34,6 @@ services:
             placement:
                 constraints:
                     - "node.labels.nfs == true"
-                    - "node.labels.private == false"                
                     - "node.labels.server == true"
             labels:
                 - "traefik.docker.network=services_default"
@@ -39,7 +62,6 @@ services:
         deploy:
             placement:
                 constraints:
-                    - "node.labels.private == false"                
                     - "node.labels.server == true"
             labels:
                 - "traefik.docker.network=services_default"
@@ -58,7 +80,7 @@ services:
               volume:
                   nocopy: true            
         environment:
-            GF_SERVER_ROOT_URL: https://grafana.apps.home
+            GF_SERVER_ROOT_URL: http://grafana.apps.home
 
     # InfluxDB
 
@@ -68,7 +90,6 @@ services:
             placement:
                 constraints:
                     - "node.labels.nfs == true"
-                    - "node.labels.private == false"
                     - "node.labels.server == true"
             labels:
                 - "traefik.docker.network=services_default"
@@ -100,7 +121,6 @@ services:
             placement:
                 constraints:
                     - "node.labels.nfs == true"
-                    - "node.labels.private == false"                    
                     - "node.labels.server == true"                    
             restart_policy:
                 condition: on-failure
@@ -135,7 +155,6 @@ services:
             placement:
                 constraints:
                     - "node.labels.nfs == true"
-                    - "node.labels.private == false"                    
                     - "node.labels.server == true"                    
             restart_policy:
                 condition: on-failure
@@ -156,7 +175,6 @@ services:
             placement:
                 constraints:
                     - "node.labels.nfs == true"
-                    - "node.labels.private == false"                    
                     - "node.labels.server == true"                    
             restart_policy:
                 condition: on-failure
@@ -173,7 +191,6 @@ services:
             placement:
                 constraints:
                     - "node.labels.nfs == true"
-                    - "node.labels.private == false"                    
                     - "node.labels.server == true"                    
             restart_policy:
                 condition: on-failure
@@ -202,7 +219,6 @@ services:
                 constraints:
                     - "node.hostname == d1"
                     - "node.labels.nfs == true"
-                    - "node.labels.private == false"  
                     - "node.labels.server == true"
             restart_policy:
                 condition: on-failure
@@ -252,7 +268,6 @@ services:
             placement:
                 constraints:
                     - "node.labels.nfs == true"
-                    - "node.labels.private == false"                    
                     - "node.labels.server == true"                    
             restart_policy:
                 condition: on-failure
@@ -270,17 +285,20 @@ services:
     rundeck:
         image: jinglemansweep/rundeck:latest
         deploy:
+            labels:
+                - "traefik.docker.network=services_default"
+                - "traefik.port=4440"
+                - "traefik.frontend.rule=Host:rundeck.apps.home"
             placement:
                 constraints:
                     - "node.labels.nfs == true"                    
-                    - "node.labels.private == false"                     
                     - "node.labels.server == true"                    
             restart_policy:
                 condition: on-failure
                 delay: 5s
                 max_attempts: 3
         environment:
-            EXTERNAL_SERVER_URL: "https://rundeck.peachtrees.eu"
+            EXTERNAL_SERVER_URL: "https://rundeck.ptre.es"
             ANSIBLE_HOST_KEY_CHECKING: "False"
         volumes:
             - type: volume
@@ -339,7 +357,6 @@ services:
                 constraints:
                     - "node.labels.server == true"
                     - "node.labels.nfs == true"
-                    - "node.labels.private == false"
             restart_policy:
                 condition: on-failure
                 delay: 5s
