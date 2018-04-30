@@ -7,6 +7,7 @@ services:
              --docker.swarmmode \
              --docker.domain=${DC_CNAME} \
              --docker.watch \
+             --docker.exposedbydefault=false \
              --logLevel=DEBUG
     deploy:
       placement:

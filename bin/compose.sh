@@ -13,5 +13,7 @@ docker-compose \
   -f stacks/rundeck.yml \
   -f stacks/traefik.yml \
   -f stacks/unifi.yml \
-  config
+  config \
+  > docker-compose.yml
+
 
