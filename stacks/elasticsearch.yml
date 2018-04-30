@@ -1,0 +1,34 @@
+version: "3.5"
+
+services:
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:5.6.6
+    deploy:
+      placement:
+        constraints:
+          - "node.labels.nfs == true"
+          - "node.labels.server == true"
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+    volumes:
+      - type: volume
+        source: elasticsearch_data
+        target: /usr/share/elasticsearch/data
+        volume:
+          nocopy: true            
+    environment:
+      http.host: "0.0.0.0"
+      transport.host: localhost
+      network.host: "0.0.0.0"
+      xpack.security.enabled: "false"
+      ES_JAVA_OPTS: "-Xms512m -Xmx512m"
+
+volumes:
+  elasticsearch_data:
+    driver: local
+    driver_opts:
+      type: nfs
+      o: addr=${DC_NFS_SERVER},vers=4,soft,rw
+      device: ":/export/volumes/elasticsearch/data"      
