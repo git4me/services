@@ -1,5 +1,8 @@
 #!/bin/bash
 
+: ${DC_CNAME?Need to set DC_CNAME}
+: ${DC_NFS_SERVER?Need to set DC_NFS_SERVER}
+
 docker-compose \
   -f stacks/gitea.yml \
   -f stacks/grafana.yml \
