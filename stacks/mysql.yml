@@ -18,9 +18,9 @@ services:
       - type: volume
         source: mysql_data
         target: /var/lib/mysql          
-        environment:
-            MYSQL_ROOT_PASSWORD: password
-            MYSQL_DATABASE: testdb
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: testdb
 
 volumes:
   mysql_data:
