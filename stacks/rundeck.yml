@@ -7,7 +7,7 @@ services:
       labels:
         - "traefik.docker.network=services_default"
         - "traefik.port=4440"
-        - "traefik.frontend.rule=Host:rundeck.apps.home"
+        - "traefik.frontend.rule=Host:rundeck.${DC_CNAME}"
       placement:
         constraints:
           - "node.labels.nfs == true"                    
@@ -17,7 +17,7 @@ services:
         delay: 5s
         max_attempts: 3
     environment:
-      EXTERNAL_SERVER_URL: "https://rundeck.ptre.es"
+      EXTERNAL_SERVER_URL: "http://rundeck.${DC_CNAME}"
       ANSIBLE_HOST_KEY_CHECKING: "False"
     volumes:
       - type: volume
@@ -68,54 +68,54 @@ volumes:
     driver: local
     driver_opts:
       type: nfs
-      o: addr=10.0.2.10,vers=4,soft,rw
+      o: addr=${DC_NFS_SERVER},vers=4,soft,rw
       device: ":/export/volumes/rundeck/ansible"
 
   rundeck_etc:
     driver: local
     driver_opts:
       type: nfs
-      o: addr=10.0.2.10,vers=4,soft,rw
+      o: addr=${DC_NFS_SERVER},vers=4,soft,rw
       device: ":/export/volumes/rundeck/etc"
  
   rundeck_log:
     driver: local
     driver_opts:
       type: nfs
-      o: addr=10.0.2.10,vers=4,soft,rw
+      o: addr=${DC_NFS_SERVER},vers=4,soft,rw
       device: ":/export/volumes/rundeck/log"
 
   rundeck_mysql:
     driver: local
     driver_opts:
       type: nfs
-      o: addr=10.0.2.10,vers=4,soft,rw
+      o: addr=${DC_NFS_SERVER},vers=4,soft,rw
       device: ":/export/volumes/rundeck/mysql"
  
   rundeck_plugins:
     driver: local
     driver_opts:
       type: nfs
-      o: addr=10.0.2.10,vers=4,soft,rw
+      o: addr=${DC_NFS_SERVER},vers=4,soft,rw
       device: ":/export/volumes/rundeck/plugins"
 
   rundeck_projects:
     driver: local
     driver_opts:
       type: nfs
-      o: addr=10.0.2.10,vers=4,soft,rw
+      o: addr=${DC_NFS_SERVER},vers=4,soft,rw
       device: ":/export/volumes/rundeck/projects"
  
   rundeck_ssh:
     driver: local
     driver_opts:
       type: nfs
-      o: addr=10.0.2.10,vers=4,soft,rw
+      o: addr=${DC_NFS_SERVER},vers=4,soft,rw
       device: ":/export/volumes/rundeck/ssh"
  
   rundeck_storage:
     driver: local
     driver_opts:
       type: nfs
-      o: addr=10.0.2.10,vers=4,soft,rw
+      o: addr=${DC_NFS_SERVER},vers=4,soft,rw
       device: ":/export/volumes/rundeck/storage"

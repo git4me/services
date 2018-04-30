@@ -7,7 +7,7 @@ services:
       labels:
         - "traefik.docker.network=services_default"
         - "traefik.port=8080"
-        - "traefik.frontend.rule=Host:unifi.apps.home"
+        - "traefik.frontend.rule=Host:unifi.${DC_CNAME}"
       placement:
         constraints:
           - "node.labels.server == true"
@@ -38,5 +38,5 @@ volumes:
     driver: local
     driver_opts:
       type: nfs
-      o: addr=10.0.2.10,vers=4,soft,rw
+      o: addr=${DC_NFS_SERVER},vers=4,soft,rw
       device: ":/export/volumes/unifi/data"          

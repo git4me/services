@@ -5,7 +5,7 @@ services:
     image: traefik
     command: --docker \
              --docker.swarmmode \
-             --docker.domain=apps.home \
+             --docker.domain=${DC_CNAME} \
              --docker.watch \
              --logLevel=DEBUG
     deploy:

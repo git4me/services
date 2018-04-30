@@ -7,7 +7,7 @@ services:
       labels:
         - "traefik.docker.network=services_default"
         - "traefik.port=8765"
-        - "traefik.frontend.rule=Host:motion.apps.home"
+        - "traefik.frontend.rule=Host:motion.${DC_CNAME}"
       placement:
         constraints:
           - "node.labels.nfs == true"
@@ -42,12 +42,12 @@ volumes:
     driver: local
     driver_opts:
       type: nfs
-      o: addr=10.0.2.10,vers=4,soft,rw
+      o: addr=${DC_NFS_SERVER},vers=4,soft,rw
       device: ":/export/data/cctv"
   motion_config:
     driver: local
     driver_opts:
       type: nfs
-      o: addr=10.0.2.10,vers=4,soft,rw
+      o: addr=${DC_NFS_SERVER},vers=4,soft,rw
       device: ":/export/volumes/motion/config"
             

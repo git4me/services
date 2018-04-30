@@ -7,7 +7,7 @@ services:
       labels:
         - "traefik.docker.network=services_default"
         - "traefik.port=32400"
-        - "traefik.frontend.rule=Host:plex.apps.home"
+        - "traefik.frontend.rule=Host:plex.${DC_CNAME}"
       placement:
         constraints:
           - "node.hostname == d1"
@@ -58,23 +58,23 @@ volumes:
     driver: local
     driver_opts:
       type: nfs
-      o: addr=10.0.2.10,vers=4,soft,rw
+      o: addr=${DC_NFS_SERVER},vers=4,soft,ro
       device: ":/export/volumes/plex/config"
   plex_transcode:
     driver: local
     driver_opts:
       type: nfs
-      o: addr=10.0.2.10,vers=4,soft,rw
+      o: addr=${DC_NFS_SERVER},vers=4,soft,ro
       device: ":/export/volumes/plex/transcode"
   movies:
     driver: local
     driver_opts:
       type: nfs
-      o: addr=10.0.2.10,vers=4,soft,ro
+      o: addr=${DC_NFS_SERVER},vers=4,soft,ro
       device: ":/export/movies"
   tvseries:
     driver: local
     driver_opts:
       type: nfs
-      o: addr=10.0.2.10,vers=4,soft,ro
+      o: addr=${DC_NFS_SERVER},vers=4,soft,ro
       device: ":/export/tvseries"

@@ -31,5 +31,5 @@ volumes:
     driver: local
     driver_opts:
       type: nfs
-      o: addr=10.0.2.10,vers=4,soft,rw
+      o: addr=${DC_NFS_SERVER},vers=4,soft,rw
       device: ":/export/volumes/gitea/data"

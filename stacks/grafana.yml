@@ -12,7 +12,7 @@ services:
       labels:
         - "traefik.docker.network=services_default"
         - "traefik.port=3000"
-        - "traefik.frontend.rule=Host:grafana.apps.home"
+        - "traefik.frontend.rule=Host:grafana.${DC_CNAME}"
       restart_policy:
         condition: on-failure
         delay: 5s
@@ -26,12 +26,12 @@ services:
         volume:
           nocopy: true            
     environment:
-      GF_SERVER_ROOT_URL: http://grafana.apps.home
+      GF_SERVER_ROOT_URL: http://grafana.${DC_CNAME}
 
 volumes:
   grafana_data:
     driver: local
     driver_opts:
       type: nfs
-      o: addr=10.0.2.10,vers=4,soft,rw
+      o: addr=${DC_NFS_SERVER},vers=4,soft,rw
       device: ":/export/volumes/grafana/data"      
