@@ -3,7 +3,7 @@ version: "3.5"
 services:
   logspout:
     image: gliderlabs/logspout
-    command: syslog+tls://logs4.papertrailapp.com:37416
+    command: syslog://d1.home:514
     deploy:
       mode: global
       restart_policy:

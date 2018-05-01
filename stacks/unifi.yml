@@ -5,6 +5,7 @@ services:
     image: linuxserver/unifi
     deploy:
       labels:
+        - "traefik.enable=true"
         - "traefik.docker.network=services_default"
         - "traefik.port=8080"
         - "traefik.frontend.rule=Host:unifi.${DC_CNAME}"

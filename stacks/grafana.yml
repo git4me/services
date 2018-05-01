@@ -10,6 +10,7 @@ services:
         constraints:
           - "node.labels.server == true"
       labels:
+        - "traefik.enable=true"
         - "traefik.docker.network=services_default"
         - "traefik.port=3000"
         - "traefik.frontend.rule=Host:grafana.${DC_CNAME}"

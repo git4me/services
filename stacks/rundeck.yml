@@ -5,6 +5,7 @@ services:
     image: jinglemansweep/rundeck:latest
     deploy:
       labels:
+        - "traefik.enable=true"
         - "traefik.docker.network=services_default"
         - "traefik.port=4440"
         - "traefik.frontend.rule=Host:rundeck.${DC_CNAME}"

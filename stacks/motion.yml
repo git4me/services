@@ -5,6 +5,7 @@ services:
     image: jshridha/motioneye
     deploy:
       labels:
+        - "traefik.enable=true"
         - "traefik.docker.network=services_default"
         - "traefik.port=8765"
         - "traefik.frontend.rule=Host:motion.${DC_CNAME}"
@@ -35,7 +36,7 @@ services:
         volume:
           nocopy: true
     environment:
-            TIMEZONE: Europe/London
+      TIMEZONE: Europe/London
 
 volumes:
   data_cctv:

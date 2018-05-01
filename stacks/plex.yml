@@ -5,6 +5,7 @@ services:
     image: plexinc/pms-docker
     deploy:
       labels:
+        - "traefik.enable=true"
         - "traefik.docker.network=services_default"
         - "traefik.port=32400"
         - "traefik.frontend.rule=Host:plex.${DC_CNAME}"
@@ -31,6 +32,8 @@ services:
       TZ: "Europe/London"
       ALLOWED_NETWORKS: "10.0.2.0/24"
       ADVERTISE_IP: "http://10.0.2.61:32400/"
+      PLEX_UID: 65534
+      PLEX_GID: 65534
     volumes:
       - type: volume
         source: plex_config
@@ -58,13 +61,13 @@ volumes:
     driver: local
     driver_opts:
       type: nfs
-      o: addr=${DC_NFS_SERVER},vers=4,soft,ro
+      o: addr=${DC_NFS_SERVER},vers=4,soft,rw
       device: ":/export/volumes/plex/config"
   plex_transcode:
     driver: local
     driver_opts:
       type: nfs
-      o: addr=${DC_NFS_SERVER},vers=4,soft,ro
+      o: addr=${DC_NFS_SERVER},vers=4,soft,rw
       device: ":/export/volumes/plex/transcode"
   movies:
     driver: local

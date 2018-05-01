@@ -4,9 +4,12 @@
 : ${DC_NFS_SERVER?Need to set DC_NFS_SERVER}
 
 docker-compose \
+  -f stacks/elasticsearch.yml \
   -f stacks/gitea.yml \
   -f stacks/grafana.yml \
+  -f stacks/graylog.yml \
   -f stacks/influxdb.yml \
+  -f stacks/logspout.yml \
   -f stacks/mongodb.yml \
   -f stacks/mosquitto.yml \
   -f stacks/motion.yml \
